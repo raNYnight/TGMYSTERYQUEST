@@ -4,16 +4,26 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon imgreader.js",
-    "start": "node imgreader.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "lint:fix": "eslint --fix ./*.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "node-telegram-bot-api": "^0.61.0",
-    "nodemon": "^2.0.22",
     "tesseract.js": "^4.0.5"
+  },
+  "devDependencies": {
+    "eslint": "^8.40.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-node": "^4.1.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "nodemon": "^2.0.22",
+    "prettier": "^2.8.8"
   }
 }
