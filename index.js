@@ -4,35 +4,46 @@ const Tesseract = require('tesseract.js');
 const token = '5995942003:AAHJ4PrxnxDrFSMJfb_c57EmKK0mgc5g8jA';
 const bot = new TelegramBot(token, {
   polling: true,
-  request: {
-    proxy: 'http://192.168.100.66:8080',
-  },
+  // request: {
+  //   proxy: 'http://192.168.100.66:8080',
+  // },
 });
-
+const answerArr = ['Л', 'И', 'Н', 'А', 'Р', 'А', 'л', 'и', 'н', 'а', 'р', 'а']
 const quizQuestions = [
   {
     question:
       'Я не верю что ты - избранный участник. Напиши мне свое имя большими буквами четким шрифтом Roboto на листке бумаги и пришли мне фото с росписью.',
     answer: 'ЛИНАРА',
-    wrongMsg: 'Я не верю что ты ЛИНАРА. Доказательства не приняты.',
-    validate: (msg) => {
+    loadingMsg: 'Подождите, загружаю фото',
+    validate:  async (msg) => {
       if (msg.photo) {
         bot.getFileLink(msg.photo[msg.photo.length - 1].file_id).then((link) => {
           Tesseract.recognize(link, 'rus').then(({ data: { text } }) => {
-            const answer = text.trim().toUpperCase();
-            const answArr = answer.split(' ');
-            const searchStr = 'ЛИНАРА';
-            const findName = answArr.find((str) => str === searchStr);
-            bot.sendMessage(msg.chat.id, `Считано с листка: ${answer.split()}`);
-            console.log(findName);
+            const recognizedArr = text.trim().split(' ');
+            const answerCombinations = [
+              "ЛИН",
+              "ЛИНА",
+              "ЛИНАР",
+              "ЛИНАРА",
+              "ИНА",
+              "ИНАР",
+              "ИНАРА",
+              "НАР",
+              "НАРА",
+              "АРА"
+          ]
+            const findName = checkImageForAnswer(recognizedArr, answerCombinations)
+            bot.sendMessage(msg.chat.id, `Считано с листка: ${recognizedArr}`);
+            console.log(recognizedArr);
             if (findName) {
               bot.sendMessage(msg.chat.id, `Я верю тебе, можешь идти дальше`);
               return true;
+            } else {
+              bot.sendMessage(msg.chat.id, `Я не верю тебе`);
             }
           });
         });
       }
-      return false;
     },
   },
   {
@@ -70,15 +81,12 @@ bot.onText(/\/start/, (msg) => {
   // });
 });
 
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  if (msg.text) console.log('text');
-  if (msg.photo) console.log('photo');
   if (msg.text === 'Start Quiz') {
-    console.log('starting');
     startQuiz(chatId);
   } else if (currentQuestion < quizQuestions.length) {
-    handleAnswer(chatId, msg);
+    await handleAnswer(chatId, msg);
   }
 });
 
@@ -96,10 +104,9 @@ function startQuiz(chatId) {
   });
 }
 
-function handleAnswer(chatId, answer) {
-  console.log(answer);
+async function handleAnswer(chatId, answer) {
   const question = quizQuestions[currentQuestion];
-  const isAnswerCorrect = question.validate(answer);
+  const isAnswerCorrect = await question.validate(answer);
   const options = quizQuestions[currentQuestion].options;
 
   if (isAnswerCorrect) {
@@ -118,7 +125,7 @@ function handleAnswer(chatId, answer) {
     }
   } else {
     if (answer.text !== '/start') {
-      bot.sendMessage(chatId, question.wrongMsg);
+      bot.sendMessage(chatId, question.wrongMsg || question.loadingMsg);
     }
   }
 }
@@ -129,4 +136,17 @@ function checkDefaultTask(userAnswer, currentQuestion) {
   } else {
     return false;
   }
+}
+
+function checkImageForAnswer(recognizedArr, answerCombinations) {
+  for (let i = 0; i < recognizedArr.length; i++) {
+    const recognizedStr = recognizedArr[i].toUpperCase();
+    for (let j = 0; j < answerCombinations.length; j++) {
+      const combination = answerCombinations[j];
+      if (recognizedStr.includes(combination)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
