@@ -1,38 +1,36 @@
 const TelegramBot = require('node-telegram-bot-api');
 const Tesseract = require('tesseract.js');
-
+const greetingMsg = require('./hello-tg');
 const token = '5995942003:AAHJ4PrxnxDrFSMJfb_c57EmKK0mgc5g8jA';
 const bot = new TelegramBot(token, {
   polling: true,
-  // request: {
-  //   proxy: 'http://192.168.100.66:8080',
-  // },
+  request: {
+    proxy: 'http://192.168.100.66:8080',
+  },
 });
-const answerArr = ['Л', 'И', 'Н', 'А', 'Р', 'А', 'л', 'и', 'н', 'а', 'р', 'а']
 const quizQuestions = [
   {
-    question:
-      'Я не верю что ты - избранный участник. Напиши мне свое имя большими буквами четким шрифтом Roboto на листке бумаги и пришли мне фото с росписью.',
+    question: greetingMsg,
     answer: 'ЛИНАРА',
     loadingMsg: 'Подождите, загружаю фото',
-    validate:  async (msg) => {
+    validate: async (msg) => {
       if (msg.photo) {
         bot.getFileLink(msg.photo[msg.photo.length - 1].file_id).then((link) => {
           Tesseract.recognize(link, 'rus').then(({ data: { text } }) => {
             const recognizedArr = text.trim().split(' ');
             const answerCombinations = [
-              "ЛИН",
-              "ЛИНА",
-              "ЛИНАР",
-              "ЛИНАРА",
-              "ИНА",
-              "ИНАР",
-              "ИНАРА",
-              "НАР",
-              "НАРА",
-              "АРА"
-          ]
-            const findName = checkImageForAnswer(recognizedArr, answerCombinations)
+              'ЛИН',
+              'ЛИНА',
+              'ЛИНАР',
+              'ЛИНАРА',
+              'ИНА',
+              'ИНАР',
+              'ИНАРА',
+              'НАР',
+              'НАРА',
+              'АРА',
+            ];
+            const findName = checkImageForAnswer(recognizedArr, answerCombinations);
             bot.sendMessage(msg.chat.id, `Считано с листка: ${recognizedArr}`);
             console.log(recognizedArr);
             if (findName) {
@@ -47,9 +45,10 @@ const quizQuestions = [
     },
   },
   {
-    question: 'What is eternal, yet fragile and easily broken?',
-    answer: 'love',
-    wrongMsg: 'Try one more',
+    question: './fish.png',
+    questionAdd: 'Разгадай ребус',
+    answer: 'РЫБОЛОВ',
+    wrongMsg: 'Используй всю свою энергию чтобы разгадать данный ребус.',
     validate: checkDefaultTask,
   },
   {
@@ -70,15 +69,19 @@ const quizQuestions = [
 let currentQuestion = 0;
 
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, 'Hi! I am a quiz bot.', {
+  // bot.sendMessage(msg.chat.id, 'Hi! I am a quiz bot.', {
+  //   reply_markup: {
+  //     keyboard: [['Start Quiz']],
+  //     resize_keyboard: true,
+  //   },
+  // });
+  bot.sendVideoNote(msg.chat.id, './video.mp4', {
+    caption: 'Поздравляем! Вы дали правильный ответ!',
     reply_markup: {
       keyboard: [['Start Quiz']],
       resize_keyboard: true,
     },
   });
-  // bot.sendVideoNote(msg.chat.id, './video.mp4', {
-  //   caption: 'Поздравляем! Вы дали правильный ответ!',
-  // });
 });
 
 bot.on('message', async (msg) => {
@@ -95,13 +98,22 @@ function startQuiz(chatId) {
   const question = quizQuestions[currentQuestion].question;
   const options = quizQuestions[currentQuestion].options;
 
-  bot.sendMessage(chatId, question, {
-    reply_markup: {
-      keyboard: options ? [options] : [],
-      resize_keyboard: true,
-      remove_keyboard: !options,
-    },
-  });
+  if (question.startsWith('./')) {
+    // если question начинается с "./", отправляем фото
+    bot.sendPhoto(chatId, question, {
+      caption: quizQuestions[currentQuestion].questionAdd,
+    });
+  } else {
+    // иначе отправляем текст вопроса
+    bot.sendMessage(chatId, question, {
+      parse_mode: 'MarkdownV2',
+      reply_markup: {
+        keyboard: options ? [options] : [],
+        resize_keyboard: true,
+        remove_keyboard: !options,
+      },
+    });
+  }
 }
 
 async function handleAnswer(chatId, answer) {
@@ -111,11 +123,11 @@ async function handleAnswer(chatId, answer) {
 
   if (isAnswerCorrect) {
     currentQuestion++;
-
     if (currentQuestion === quizQuestions.length) {
       bot.sendMessage(chatId, 'Congratulations! You have finished the quiz.');
     } else {
-      bot.sendMessage(chatId, question, {
+      bot.sendMessage(chatId, quizQuestions[currentQuestion].question, {
+        parse_mode: 'MarkdownV2',
         reply_markup: {
           keyboard: options ? [options] : [],
           resize_keyboard: true,
@@ -130,7 +142,7 @@ async function handleAnswer(chatId, answer) {
   }
 }
 
-function checkDefaultTask(userAnswer, currentQuestion) {
+function checkDefaultTask(userAnswer) {
   if (userAnswer.text.toLowerCase() === quizQuestions[currentQuestion].answer.toLowerCase()) {
     return true;
   } else {
