@@ -1,6 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 const Tesseract = require('tesseract.js');
-const greetingMsg = require('./hello-tg');
+const { task1, task2 } = require('./components/bot-messages');
 const token = '5995942003:AAHJ4PrxnxDrFSMJfb_c57EmKK0mgc5g8jA';
 const bot = new TelegramBot(token, {
   polling: true,
@@ -8,11 +8,9 @@ const bot = new TelegramBot(token, {
     proxy: 'http://192.168.100.66:8080',
   },
 });
-const quizMsg =
-  'Дорогая, давай сделаем этот квест еще более волшебным! Я подготовил для тебя мини-викторину на угадывание фильмов или музыки по эмодзи. Наша любовь также полна эмоций и символов, которые я хочу передать через этот квест. Для начала, посмотри на эти эмодзи: [вставить сюда эмодзи]. Они связаны с одним из наших любимых фильмов/песен. Угадай, о чем я говорю! Приступай к заданию, моя любовь!';
 const quizQuestions = [
   {
-    question: greetingMsg,
+    question: task1,
     answer: 'ЛИНАРА',
     rigthAnswer: `Я верю тебе, можешь идти дальше`,
     wrongAnswer: `Я не верю тебе. Загрузи фотографию с понятным мне(роботу) текстом и своей росписью, чтобы я убедился что ты избранница`,
@@ -47,35 +45,39 @@ const quizQuestions = [
     },
   },
   {
-    question: 'What is greater than God, worse than the devil, and if you eat it, you will die?',
-    answer: 'nothing',
-    rigthAnswer: `Я верю тебе, можешь идти дальше`,
-    wrongAnswer: `Я не верю тебе`,
+    question: '👨‍⚕️🔪🚪🔒👦👮‍♂️',
+    answer: 'Блудный сын',
+    rigthAnswer: `Умница, малышка!`,
+    wrongAnswer: `Близко...Попробуй еще разочек)`,
+    validate: checkDefaultTask,
+  },
+  {
+    question: '🕵️‍♂️🇩🇰🌉🚧🚘🇸🇪🕵️‍♂️',
+    answer: 'Мост',
+    rigthAnswer: `Гений мысли! Так держать!`,
+    wrongAnswer: `Ты на верном пути. Попробуй еще разок!`,
     validate: checkDefaultTask,
   },
   {
     question: '🚘💨💥👊😎💰❤️',
     answer: 'Форсаж',
-    rigthAnswer: `Я верю тебе, можешь идти дальше`,
-    wrongAnswer: `Я не верю тебе`,
+    rigthAnswer: `Лучшая, бубуська<3`,
+    wrongAnswer: `а-а`,
     validate: checkDefaultTask,
   },
   {
-    question: '🚘💨💥👊',
-    answer: 'Фор',
-    rigthAnswer: `Я верю тебе, можешь идти дальше`,
-    wrongAnswer: `Я не верю тебе`,
+    img: './assets/task5.jpg',
+    audio: './assets/best.mp3',
+    question:
+      'У нас было много запоминающихся моментов.Вспомнишь, что за трек прикреплен к этой фотокарточке?',
+    answer: 'Лучше всех',
+    rigthAnswer: `Нет. Ты - лучше всех!!!`,
+    wrongAnswer: `Я уверен, что ты знаешь ответ. ПРосто напиши название)`,
     validate: checkDefaultTask,
   },
+
   {
-    question: '🚘💨💥👊😎💰❤️выф',
-    answer: 'фор4',
-    rigthAnswer: `Я верю тебе, можешь идти дальше`,
-    wrongAnswer: `Я не верю тебе`,
-    validate: checkDefaultTask,
-  },
-  {
-    img: './fish.png',
+    img: './assets/fish.png',
     question:
       'Дорогая, сейчас тебе предлагается погрузиться в мир загадок и разгадок. Твое последнее задание - разгадать ребус!',
     answer: 'РЫБОЛОВ',
@@ -87,7 +89,7 @@ const quizQuestions = [
 let currentQuestion = 0;
 
 bot.onText(/\/start/, (msg) => {
-  // bot.sendVideoNote(msg.chat.id, './video.mp4', {
+  // bot.sendVideoNote(msg.chat.id, './assets/video.mp4', {
   //   caption: '',
   //   reply_markup: {
   //     keyboard: [['Start Quiz']],
@@ -129,8 +131,12 @@ async function handleAnswer(chatId, answer) {
 
   if (isAnswerCorrect) {
     currentQuestion++;
+    bot.sendMessage(chatId, quizQuestions[currentQuestion].rigthAnswer);
     if (currentQuestion === quizQuestions.length) {
-      bot.sendMessage(chatId, 'Congratulations! You have finished the quiz.');
+      bot.sendMessage(
+        chatId,
+        'Congratulations! Ты справилась со всеми заданиями. В качестве награды ты получишь презент!'
+      );
     } else {
       const question = quizQuestions[currentQuestion];
       bot.sendMessage(chatId, question.rigthAnswer);
@@ -144,22 +150,24 @@ async function handleAnswer(chatId, answer) {
           break;
         case 1:
           console.log('case', question.id, 'curr', currentQuestion);
-          bot.sendMessage(chatId, question.question);
+          bot.sendMessage(chatId, task2).then(() => bot.sendMessage(chatId, question.question));
+
           break;
         case 2:
-          console.log('case', question.id, 'curr', currentQuestion);
-
-          bot.sendMessage(chatId, quizMsg).then(() => bot.sendMessage(chatId, question.question));
-          break;
         case 3:
+          console.log('case', question.id, 'curr', currentQuestion);
+          bot.sendMessage(chatId, question.question);
+          break;
+
         case 4:
           console.log('case', question.id, 'curr', currentQuestion);
-
-          bot.sendMessage(chatId, question.question);
+          bot.sendPhoto(chatId, question.img, {
+            caption: question.question,
+          });
           break;
         case 5:
           console.log('case', question.id, 'curr', currentQuestion);
-
+          bot.sendAudio(chatId);
           bot.sendPhoto(chatId, question.img, {
             caption: question.question,
           });
